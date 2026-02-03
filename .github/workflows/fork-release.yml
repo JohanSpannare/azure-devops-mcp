@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       fork_number:
-        description: "Fork release number (e.g., 1, 2, 3)"
+        description: "Fork release number (leave empty for auto-increment)"
         required: false
-        default: "1"
+        default: ""
         type: string
 
 permissions:
@@ -49,8 +49,8 @@ jobs:
             NEXT_NUM=$((HIGHEST + 1))
           fi
 
-          # Use input if provided, otherwise use auto-calculated
-          if [ "${{ github.event.inputs.fork_number }}" != "1" ] && [ -n "${{ github.event.inputs.fork_number }}" ]; then
+          # Use input if provided and not empty, otherwise use auto-calculated
+          if [ -n "${{ github.event.inputs.fork_number }}" ]; then
             NEXT_NUM=${{ github.event.inputs.fork_number }}
           fi
 
