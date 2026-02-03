@@ -1,14 +1,12 @@
 name: Publish Fork to npm
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version to publish (e.g., 2.4.0-fork.1)"
+      fork_number:
+        description: "Fork release number (e.g., 1, 2, 3)"
         required: false
+        default: "1"
         type: string
 
 permissions:
@@ -29,12 +27,44 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
 
+      - name: Get official package version
+        id: official
+        run: |
+          OFFICIAL_VERSION=$(npm view @azure-devops/mcp version)
+          echo "version=$OFFICIAL_VERSION" >> $GITHUB_OUTPUT
+          echo "Official version: $OFFICIAL_VERSION"
+
+      - name: Get current fork versions
+        id: fork
+        run: |
+          # Get all published fork versions for this base version, or empty if none
+          FORK_VERSIONS=$(npm view @johanspannare/azure-devops-mcp-extended versions --json 2>/dev/null | grep -o '"${{ steps.official.outputs.version }}-fork\.[0-9]*"' | tr -d '"' || echo "")
+          echo "Existing fork versions: $FORK_VERSIONS"
+
+          if [ -z "$FORK_VERSIONS" ]; then
+            NEXT_NUM=1
+          else
+            # Get highest fork number and increment
+            HIGHEST=$(echo "$FORK_VERSIONS" | sed 's/.*fork\.//' | sort -n | tail -1)
+            NEXT_NUM=$((HIGHEST + 1))
+          fi
+
+          # Use input if provided, otherwise use auto-calculated
+          if [ "${{ github.event.inputs.fork_number }}" != "1" ] && [ -n "${{ github.event.inputs.fork_number }}" ]; then
+            NEXT_NUM=${{ github.event.inputs.fork_number }}
+          fi
+
+          FORK_VERSION="${{ steps.official.outputs.version }}-fork.${NEXT_NUM}"
+          echo "version=$FORK_VERSION" >> $GITHUB_OUTPUT
+          echo "Next fork version: $FORK_VERSION"
+
+      - name: Set package version
+        run: |
+          npm version ${{ steps.fork.outputs.version }} --no-git-tag-version
+          echo "Publishing version: ${{ steps.fork.outputs.version }}"
+
       - name: Install dependencies
         run: npm ci
-
-      - name: Update version (if provided)
-        if: ${{ github.event.inputs.version }}
-        run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
       - name: Build
         run: npm run build
