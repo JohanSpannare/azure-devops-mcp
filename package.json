@@ -1,19 +1,19 @@
 {
-  "name": "@azure-devops/mcp",
-  "version": "2.4.0",
-  "mcpName": "microsoft.com/azure-devops",
-  "description": "MCP server for interacting with Azure DevOps",
+  "name": "@johanspannare/azure-devops-mcp-extended",
+  "version": "2.4.0-fork.1",
+  "mcpName": "johanspannare/azure-devops-mcp-extended",
+  "description": "Extended MCP server for Azure DevOps - adds update/delete comment tools (fork of @azure-devops/mcp)",
   "license": "MIT",
-  "author": "Microsoft Corporation",
-  "homepage": "https://github.com/microsoft/azure-devops-mcp",
-  "bugs": "https://github.com/microsoft/azure-devops-mcp/issues",
+  "author": "Johan Spannare",
+  "homepage": "https://github.com/JohanSpannare/azure-devops-mcp",
+  "bugs": "https://github.com/JohanSpannare/azure-devops-mcp/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/microsoft/azure-devops-mcp.git"
+    "url": "https://github.com/JohanSpannare/azure-devops-mcp.git"
   },
   "type": "module",
   "bin": {
-    "mcp-server-azuredevops": "dist/index.js"
+    "mcp-server-azuredevops-extended": "dist/index.js"
   },
   "files": [
     "dist"

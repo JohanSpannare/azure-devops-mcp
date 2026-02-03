@@ -20,6 +20,8 @@ const WORKITEM_TOOLS = {
   list_work_item_revisions: "wit_list_work_item_revisions",
   get_work_items_for_iteration: "wit_get_work_items_for_iteration",
   add_work_item_comment: "wit_add_work_item_comment",
+  update_work_item_comment: "wit_update_work_item_comment",
+  delete_work_item_comment: "wit_delete_work_item_comment",
   add_child_work_items: "wit_add_child_work_items",
   link_work_item_to_pull_request: "wit_link_work_item_to_pull_request",
   get_work_item_type: "wit_get_work_item_type",
@@ -312,6 +314,108 @@ function configureWorkItemTools(server: McpServer, tokenProvider: () => Promise<
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         return {
           content: [{ type: "text", text: `Error adding work item comment: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    WORKITEM_TOOLS.update_work_item_comment,
+    "Update an existing comment on a work item by comment ID.",
+    {
+      project: z.string().describe("The name or ID of the Azure DevOps project."),
+      workItemId: z.number().describe("The ID of the work item containing the comment."),
+      commentId: z.number().describe("The ID of the comment to update."),
+      comment: z.string().describe("The new text for the comment."),
+      format: z.enum(["markdown", "html"]).optional().default("html").describe("The format of the comment text."),
+    },
+    async ({ project, workItemId, commentId, comment, format }) => {
+      try {
+        const connection = await connectionProvider();
+        const orgUrl = connection.serverUrl;
+        const accessToken = await tokenProvider();
+
+        const body = {
+          text: comment,
+        };
+
+        const formatParameter = format === "markdown" ? 0 : 1;
+        const response = await fetch(`${orgUrl}/${project}/_apis/wit/workItems/${workItemId}/comments/${commentId}?format=${formatParameter}&api-version=${markdownCommentsApiVersion}`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "User-Agent": userAgentProvider(),
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update work item comment: ${response.statusText}`);
+        }
+
+        const updatedComment = await response.text();
+
+        return {
+          content: [{ type: "text", text: updatedComment }],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+          content: [{ type: "text", text: `Error updating work item comment: ${errorMessage}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    WORKITEM_TOOLS.delete_work_item_comment,
+    "Delete a comment from a work item by comment ID. This action is permanent and cannot be undone.",
+    {
+      project: z.string().describe("The name or ID of the Azure DevOps project."),
+      workItemId: z.number().describe("The ID of the work item containing the comment."),
+      commentId: z.number().describe("The ID of the comment to delete."),
+    },
+    async ({ project, workItemId, commentId }) => {
+      try {
+        const connection = await connectionProvider();
+        const orgUrl = connection.serverUrl;
+        const accessToken = await tokenProvider();
+
+        const response = await fetch(`${orgUrl}/${project}/_apis/wit/workItems/${workItemId}/comments/${commentId}?api-version=${markdownCommentsApiVersion}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "User-Agent": userAgentProvider(),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete work item comment: ${response.statusText}`);
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  workItemId,
+                  commentId,
+                  deleted: true,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+          content: [{ type: "text", text: `Error deleting work item comment: ${errorMessage}` }],
           isError: true,
         };
       }
