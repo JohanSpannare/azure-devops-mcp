@@ -60,7 +60,7 @@ jobs:
 
       - name: Set package version
         run: |
-          npm version ${{ steps.fork.outputs.version }} --no-git-tag-version
+          npm version ${{ steps.fork.outputs.version }} --no-git-tag-version --allow-same-version
           echo "Publishing version: ${{ steps.fork.outputs.version }}"
 
       - name: Install dependencies
